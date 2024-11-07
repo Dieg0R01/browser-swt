@@ -2,11 +2,22 @@ package browser;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.browser.Browser;
+import org.eclipse.swt.browser.LocationEvent;
+import org.eclipse.swt.browser.LocationListener;
+import org.eclipse.swt.browser.ProgressEvent;
+import org.eclipse.swt.browser.ProgressListener;
+import org.eclipse.swt.events.KeyAdapter;
+import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.FileDialog;
+import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Menu;
+import org.eclipse.swt.widgets.MenuItem;
+import org.eclipse.swt.widgets.ProgressBar;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.ToolBar;
@@ -53,6 +64,30 @@ public class MainWindow {
         
         navegador.setUrl("http://www.unirioja.es");
         
+        navegador.addLocationListener(new LocationListener() {
+            @Override
+            public void changing(LocationEvent event) {
+                
+            }
+
+            @Override
+            public void changed(LocationEvent event) {
+                textBox.setText(event.location);
+            }
+        });
+
+        textBox.addKeyListener(new KeyAdapter() {
+            @Override
+            public void keyPressed(KeyEvent e) {
+                if (e.keyCode == SWT.CR) {
+                    String url = textBox.getText();
+                    if (url != null && !url.isEmpty()) {
+                        navegador.setUrl(url);
+                    }
+                }
+            }
+        });
+        
         atrasB.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
@@ -85,6 +120,71 @@ public class MainWindow {
                 if (url != null && !url.isEmpty()) {
                     navegador.setUrl(url);
                 }
+            }
+        });
+        
+        // Barra de estado
+        Label statusLabel = new Label(shell, SWT.NONE);
+        statusLabel.setText("Listo");
+        statusLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
+        
+        // Barra de progreso
+        ProgressBar progressBar = new ProgressBar(shell, SWT.HORIZONTAL);
+        progressBar.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false, 2, 1));
+        progressBar.setVisible(false);
+
+        // Agregar barra de menús
+        Menu menuBar = new Menu(shell, SWT.BAR);
+        shell.setMenuBar(menuBar);
+        
+        MenuItem fileMenu = new MenuItem(menuBar, SWT.CASCADE);
+        fileMenu.setText("Archivo");
+
+        Menu fileSubMenu = new Menu(shell, SWT.DROP_DOWN);
+        fileMenu.setMenu(fileSubMenu);
+
+        // Opción de cargar archivo HTML
+        MenuItem openItem = new MenuItem(fileSubMenu, SWT.PUSH);
+        openItem.setText("Abrirº");
+        openItem.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                FileDialog dialog = new FileDialog(shell, SWT.OPEN);
+                dialog.setFilterExtensions(new String[] { "*.html", "*.htm" });
+                String filePath = dialog.open();
+                if (filePath != null) {
+                    navegador.setUrl("file:///" + filePath);
+                }
+            }
+        });
+
+        // Opción de salir
+        MenuItem exitItem = new MenuItem(fileSubMenu, SWT.PUSH);
+        exitItem.setText("Salir");
+        exitItem.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                shell.close();
+            }
+        });
+
+        // Progreso de carga de la página
+        navegador.addProgressListener(new ProgressListener() {
+            @Override
+            public void changed(ProgressEvent event) {
+                if (event.total == 0) {
+                    progressBar.setVisible(false);
+                } else {
+                    progressBar.setVisible(true);
+                    progressBar.setSelection(event.current);
+                    progressBar.setMaximum(event.total);
+                }
+            }
+
+            @Override
+            public void completed(ProgressEvent event) {
+                progressBar.setVisible(false);
+                statusLabel.setText("Completado");
             }
         });
 		
